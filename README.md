@@ -2,17 +2,61 @@
 
 > **Arquitectura asíncrona con RabbitMQ | Java 17 + Spring Boot**
 
-## 📋 Índice
-
-1. [Arquitectura](#-arquitectura)
-2. [Requisitos](#-requisitos)
-3. [Guía Paso a Paso - IntelliJ IDEA](#-guía-paso-a-paso---intellij-idea)
-4. [Pruebas y Validación](#-pruebas-y-validación)
-5. [Monitoreo](#-monitoreo)
-6. [Nota para Visual Studio](#-nota-para-visual-studio)
-7. [Troubleshooting](#-troubleshooting)
 
 ---
+# DEMO DE FUNCIONAMIENTO
+## Ejecutamos el comando docker compose -d e inicializamos RabbitMQ, luego nos logeamos con las credenciales que hayamos colocado
+<img width="1917" height="912" alt="image" src="https://github.com/user-attachments/assets/7b16708b-21b1-4caf-ba27-d7cc1094d4fd" />
+
+## Inicializamos el servicio desarrollado (En mi caso desde Intelligent Idea)
+<img width="1919" height="1015" alt="image" src="https://github.com/user-attachments/assets/50a04c55-df0d-4025-a8ff-1c4419f6a42c" />
+
+## Preparé una colección para probar las API en postman
+<img width="1919" height="1022" alt="image" src="https://github.com/user-attachments/assets/8d3cc96f-0baa-4976-9b74-e046e756e461" />
+
+## Prueba 01 : Health Check
+
+<img width="1221" height="902" alt="image" src="https://github.com/user-attachments/assets/8453dc89-220e-43d6-959a-9540a4a09682" />
+
+## Prueba 02: Creación de orden simple
+<img width="1224" height="876" alt="image" src="https://github.com/user-attachments/assets/81bb8a3e-248e-40bb-ae81-a79c2ddb989c" />
+
+# Prueba 03: Orden de monto Alto
+<img width="1218" height="907" alt="image" src="https://github.com/user-attachments/assets/9765bc07-c1e7-48f5-9971-1c31ac087c93" />
+
+## Prueba 04: Múltiples variables:
+<img width="1211" height="918" alt="image" src="https://github.com/user-attachments/assets/c6bf6a02-8d9a-4e68-af9f-e29789cc4f41" />
+
+## Flujo Completo: 1. Enviar un pedido
+<img width="1235" height="914" alt="image" src="https://github.com/user-attachments/assets/67dfb8a8-9ec3-4914-9e22-dacc9d752dd3" />
+
+## Escenario Exitoso
+<img width="1755" height="550" alt="image" src="https://github.com/user-attachments/assets/b19ea298-56a6-4ea9-bd94-db2a8896e52b" />
+
+### Validaciones
+- Cada línea tiene pedidoId (TEST-FLOW-001)
+- Cada línea tiene timestamp (12:30:45.123)
+- Cada línea tiene thread (http-nio-8080-exec-1, RabbitListenerEndpointContainer#0-1)
+- El PaymentWorker procesó exitosamente (50% de probabilidad)
+- El EmailWorker envió email porque paymentStatus=PAID
+### Validación RabbitMQ
+<img width="974" height="324" alt="image" src="https://github.com/user-attachments/assets/5a3ae061-0837-4c3a-8d19-5da6cd11bf75" />
+<img width="1396" height="380" alt="image" src="https://github.com/user-attachments/assets/b6de9717-75d4-4255-b8f7-65813a92292c" />
+<img width="1919" height="905" alt="image" src="https://github.com/user-attachments/assets/46ccf44d-d731-44ce-888a-70263829d0e0" />
+
+- payments.queue: 0 mensajes (procesado inmediatamente)
+- emails.queue: 0 mensajes (email enviado)
+- orders.dlq: 0 mensajes (no hubo fallo)
+
+# Ahora desde POSTMAN enviaré 10 veces la misma petición haber cómo responde el servidor
+<img width="1279" height="902" alt="image" src="https://github.com/user-attachments/assets/9f22d7f1-f0f9-4589-94d2-4806b5c75c96" />
+
+
+## Resultados
+
+<img width="1764" height="693" alt="image" src="https://github.com/user-attachments/assets/03b830b6-14da-40d0-9734-22304b961120" />
+
+<img width="1251" height="273" alt="image" src="https://github.com/user-attachments/assets/9d3798a9-1b98-4a34-93ba-7cd5e4f65bf1" />
 
 ## 🏗 Arquitectura
 
@@ -73,215 +117,7 @@
 
 ---
 
-## 🚀 Guía Paso a Paso - IntelliJ IDEA
 
-### Paso 1: Clonar/Abrir el Proyecto
-
-1. Abre **IntelliJ IDEA**
-2. Selecciona **Open** y navega a la carpeta del proyecto:
-   ```
-   c:\Users\VICTUS\Desktop\SEMESTRE 202610\MATERIAS\DISEÑO Y ARQ SOFTWARE\SEMANA 07\ejercicioArquitectura
-   ```
-3. IntelliJ detectará automáticamente el proyecto Maven
-
-   **Esperado**: IntelliJ indexa el proyecto y descarga dependencias
-
-### Paso 2: Configurar JDK
-
-1. Ve a **File → Project Structure** (Ctrl+Alt+Shift+S)
-2. En **Project**, selecciona:
-   - **SDK**: Java 17 o superior
-   - **Language level**: 17
-3. Clic en **Apply** y **OK**
-
-### Paso 3: Levantar RabbitMQ con Docker
-
-1. Abre terminal integrada en IntelliJ (**View → Tool Windows → Terminal**)
-2. Ejecuta:
-   ```powershell
-   docker compose up -d
-   ```
-
-**Validación**:
-```powershell
-docker ps
-```
-
-**Esperado**: Ver contenedor `bikestore-rabbitmq` corriendo en puertos 5672 y 15672
-
-### Paso 4: Verificar Configuración
-
-1. Abre `src/main/resources/application.yml`
-2. Verifica la configuración de RabbitMQ:
-   ```yaml
-   spring:
-     rabbitmq:
-       host: localhost
-       port: 5672
-       username: admin
-       password: admin123
-   ```
-
-### Paso 5: Ejecutar la Aplicación
-
-#### Opción A: Desde IntelliJ (Recomendado)
-
-1. Localiza `src/main/java/com/bikestore/Application.java`
-2. Clic derecho → **Run 'Application'**
-3. O presiona **Shift+F10**
-
-#### Opción B: Terminal Maven
-
-```powershell
-mvn clean spring-boot:run
-```
-
-**Esperado en consola**:
-```
-=== BikeStore Async v1.0 Started ===
-API: http://localhost:8080/orders
-RabbitMQ Management: http://localhost:15672 (admin/admin123)
-```
-
-### Paso 6: Verificar Salud de la API
-
-En terminal (nueva pestaña):
-```powershell
-curl http://localhost:8080/orders/health
-```
-
-**Esperado**: `BikeStore Async v1.0 - UP`
-
----
-
-## 🧪 Pruebas y Validación
-
-### Prueba 1: Enviar Pedido (Escenario Exitoso)
-
-```powershell
-curl -X POST http://localhost:8080/orders `
-  -H "Content-Type: application/json" `
-  -d '{\"pedidoId\":\"ORDER-001\",\"monto\":120.50,\"clienteEmail\":\"cliente@mail.com\",\"paymentStatus\":\"PENDING\"}'
-```
-
-**Logs esperados** (consola IntelliJ):
-
-```
-[2025-11-13 10:15:30.123] [http-nio-8080-exec-1] [ORDER_RECEIVED] PedidoId=ORDER-001 | Received order for cliente@mail.com - Amount: $120.5
-[2025-11-13 10:15:30.145] [http-nio-8080-exec-1] [ORDER_PUBLISHED] PedidoId=ORDER-001 | Publishing to exchange: orders.exchange
-[2025-11-13 10:15:30.156] [http-nio-8080-exec-1] [ORDER_SENT_TO_PAYMENT] PedidoId=ORDER-001 | Message sent to payment processing
-[2025-11-13 10:15:30.201] [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-1] [PAYMENT_PROCESSING] PedidoId=ORDER-001 | Attempt 1/3 - Amount: $120.5
-```
-
-#### Escenario A: Pago Exitoso (50% prob.)
-
-```
-[2025-11-13 10:15:30.210] [PAYMENT_SUCCESS] PedidoId=ORDER-001 | Payment processed successfully - Status: PAID
-[2025-11-13 10:15:30.215] [PAYMENT_FORWARDED_TO_EMAIL] PedidoId=ORDER-001 | Order sent to email queue
-[2025-11-13 10:15:30.320] [EMAIL_RECEIVED] PedidoId=ORDER-001 | Email task received - Status: PAID
-[2025-11-13 10:15:30.325] [EMAIL_SENDING] PedidoId=ORDER-001 | Sending confirmation email to: cliente@mail.com
-[2025-11-13 10:15:30.830] [EMAIL_SENT] PedidoId=ORDER-001 | ✓ Confirmation email sent successfully to cliente@mail.com
-```
-
-#### Escenario B: Fallo con Reintentos (50% prob.)
-
-```
-[2025-11-13 10:15:30.210] [PAYMENT_FAILED_RETRY] PedidoId=ORDER-001 | Payment failed - Retry 1/3
-[2025-11-13 10:15:32.215] [PAYMENT_PROCESSING] PedidoId=ORDER-001 | Attempt 2/3 - Amount: $120.5
-[2025-11-13 10:15:32.220] [PAYMENT_FAILED_RETRY] PedidoId=ORDER-001 | Payment failed - Retry 2/3
-[2025-11-13 10:15:34.230] [PAYMENT_PROCESSING] PedidoId=ORDER-001 | Attempt 3/3 - Amount: $120.5
-[2025-11-13 10:15:34.235] [PAYMENT_FAILED_MAX_RETRIES] PedidoId=ORDER-001 | Payment failed after 3 attempts - Sending to DLQ
-```
-
-### Prueba 2: Múltiples Pedidos (Observar Threads)
-
-```powershell
-# Pedido 1
-curl -X POST http://localhost:8080/orders -H "Content-Type: application/json" -d '{\"pedidoId\":\"ORDER-002\",\"monto\":75.00,\"clienteEmail\":\"user1@mail.com\"}'
-
-# Pedido 2
-curl -X POST http://localhost:8080/orders -H "Content-Type: application/json" -d '{\"pedidoId\":\"ORDER-003\",\"monto\":200.00,\"clienteEmail\":\"user2@mail.com\"}'
-
-# Pedido 3
-curl -X POST http://localhost:8080/orders -H "Content-Type: application/json" -d '{\"pedidoId\":\"ORDER-004\",\"monto\":50.00,\"clienteEmail\":\"user3@mail.com\"}'
-```
-
-**Validación**: Observar en logs:
-- ✅ Diferentes **thread names** (`exec-1`, `exec-2`, `RabbitListenerEndpointContainer#0-1`)
-- ✅ **Timestamps** precisos por cada transición
-- ✅ **pedidoId** presente en cada línea
-- ✅ **Procesamiento asíncrono** (no secuencial)
-
-### Prueba 3: Validar DLQ (Dead Letter Queue)
-
-Envía 5-10 pedidos y verifica en RabbitMQ Management UI:
-
-1. Abre navegador: **http://localhost:15672**
-2. Login: `admin` / `admin123`
-3. Ve a **Queues** tab
-4. Observa:
-   - `payments.queue`: Mensajes entrantes
-   - `orders.dlq`: Mensajes fallidos tras 3 reintentos
-   - `emails.queue`: Solo mensajes con `PAID`
-
----
-
-## 📊 Monitoreo
-
-### RabbitMQ Management UI
-
-**URL**: http://localhost:15672  
-**Credenciales**: admin / admin123
-
-#### Colas a Monitorear
-
-| Cola | Propósito | Esperado |
-|------|-----------|----------|
-| `payments.queue` | Procesamiento de pagos | Consume rápido, reintentos visibles |
-| `emails.queue` | Envío de emails | Solo mensajes PAID |
-| `orders.dlq` | Fallos permanentes | Mensajes tras 3 reintentos fallidos |
-
-#### Inspeccionar Mensajes
-
-1. En RabbitMQ UI, clic en **`orders.dlq`**
-2. Scroll a **Get messages**
-3. Clic en **Get Message(s)**
-4. Ver payload JSON con `paymentStatus: FAILED` y `retryCount: 3`
-
----
-
-## 📝 Nota para Visual Studio
-
-> **Compatibilidad**: Este proyecto está optimizado para **IntelliJ IDEA**. Para **Visual Studio Code**:
-
-### Ejecutar desde VS Code
-
-1. Instala extensiones:
-   - **Extension Pack for Java** (Microsoft)
-   - **Spring Boot Extension Pack** (VMware)
-
-2. Abre la carpeta del proyecto
-
-3. Ejecutar RabbitMQ:
-   ```powershell
-   docker compose up -d
-   ```
-
-4. Ejecutar aplicación:
-   - Presiona **F5** o usa terminal:
-     ```powershell
-     mvn spring-boot:run
-     ```
-
-5. Probar API con el mismo `curl` indicado arriba
-
-### Limitaciones VS Code
-
-- No hay soporte nativo para ejecutar aplicaciones Java con "modo agente" similar a IntelliJ
-- Para debugging avanzado, IntelliJ IDEA es recomendado
-- VS Code funciona correctamente para ejecución estándar y pruebas
-
----
 
 ## 🐛 Troubleshooting
 
@@ -326,32 +162,8 @@ java.net.ConnectException: Connection refused: no further information
      level:
        com.bikestore: INFO
    ```
-2. Asegúrate de que IntelliJ esté mostrando la ventana **Run**
 
-### Mensajes no se procesan
-
-**Checklist**:
-- [ ] RabbitMQ corriendo (`docker ps`)
-- [ ] Aplicación iniciada correctamente
-- [ ] Colas creadas en RabbitMQ UI
-- [ ] Revisa logs para excepciones
-
----
-
-## ✅ Checklist de Validación Final
-
-- [ ] **RabbitMQ** corriendo en Docker
-- [ ] **API** `/orders` responde (health check OK)
-- [ ] **Publicación** de mensajes exitosa
-- [ ] **PaymentWorker** procesa con reintentos (3x)
-- [ ] **DLQ** recibe mensajes fallidos
-- [ ] **EmailWorker** solo procesa `PAID`
-- [ ] **Logs** incluyen pedidoId, timestamp, thread en cada paso
-- [ ] **RabbitMQ UI** muestra colas y mensajes
-
----
-
-## 📚 Recursos Adicionales
+## 📚 REFERENCIAS
 
 - [Spring AMQP Documentation](https://docs.spring.io/spring-amqp/reference/)
 - [RabbitMQ Tutorials](https://www.rabbitmq.com/getstarted.html)
@@ -360,5 +172,4 @@ java.net.ConnectException: Connection refused: no further information
 ---
 
 **Versión**: 1.0.0  
-**Autor**: BikeStore Architecture Team  
-**Fecha**: Noviembre 2025
+**Autor**: Martin Jimenez 
